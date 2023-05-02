@@ -10,7 +10,7 @@ class LearnTrustAgent:
         self.registers = dict.fromkeys(registers_indices, 0.5) # reliability estimates of the other agents. dict mapping neighbor id to reliabilty opinion
         self.alpha_direct = alpha_direct
         self.alpha_indirect = alpha_indirect
-        self.encounter_history = [] # not yet used, but could be useful
+        self.encounter_history = [] # this attribute is not yet used, but could be useful
 
     def get_reliability(self):
         return self.reliability
@@ -39,11 +39,8 @@ class LearnTrustAgent:
         predicted_expected_payoff = opinion * p_g + (1 - opinion) * p_b
         accepted = predicted_expected_payoff >= 0
         if accepted:
-            reliability_sample = np.random.random() 
-            # print("reliability sample: ", reliability_sample)
-            print("active id reliability: ", active_id_reliability)
+            reliability_sample = np.random.random()
             result = reliability_sample < active_id_reliability
-            print("encounter result: ", result)
         else:
             result = 0
         # have passive agent do opinion updating

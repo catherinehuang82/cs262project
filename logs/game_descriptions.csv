@@ -1,0 +1,4 @@
+Unnamed: 0,run_no,num_agents,r_dist,agent_type,num_interactions,p_g,p_b
+,0,100,uniform,learn_trust,5000,2,-2
+,1,100,uniform,learn_trust,1000,2,-2
+,2,100,uniform,learn_trust,3000,2,-2
