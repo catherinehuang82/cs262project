@@ -1,12 +1,40 @@
 import numpy as np
 
 class LearnTrustAgent:
+    '''
+    This class represents a LearnTrust agent in the simulation. 
+    Attributes
+    ----------
+    id : int
+        unique identifier for this agent
+    reliability : float
+        reliability score of this agent, value in range (0,1)
+    registers : dict
+        dict mapping neighbor id to reliabilty opinion
+    alpha_direct : float
+        decay rate for direct opinion updates
+    alpha_indirect : float
+        decay rate for second-hand opinion updates
+    encounter_history : list
+        list of encounter results
+
+    Methods
+    -------
+    get_reliability()
+        returns reliability score of this agent
+
+    get_registers()
+        returns dict mapping neighbor id to reliabilty opinion
     
+    handle_encounter(active_id, active_id_reliability, active_id_registers, p_g, p_b)
+        handle encounter when this agent is asked to participate in an encounter as the passive agent.
+    '''
+
     def __init__(self, id, reliability, alpha_direct, alpha_indirect):
         self.id = id
         self.reliability = reliability # quantity between 0 and 1
         registers_indices = list(range(100))
-        registers_indices.remove(id)
+        registers_indices.remove(id) 
         self.registers = dict.fromkeys(registers_indices, 0.5) # reliability estimates of the other agents. dict mapping neighbor id to reliabilty opinion
         self.alpha_direct = alpha_direct
         self.alpha_indirect = alpha_indirect
@@ -18,7 +46,7 @@ class LearnTrustAgent:
     def get_registers(self):
         return self.registers
 
-    def handle_encounter(self, active_id, active_id_reliability, active_id_registers, p_g, p_b):
+    def handle_encounter(self, active_id: int, active_id_reliability: int, active_id_registers: dict, p_g: float, p_b: float) -> tuple[bool, bool]:
         '''
         handle encounter when this agent is asked to participate in an encounter as the passive agent.
         this handling includes choosing whether to accept the encounter request, and updating opinions
@@ -54,4 +82,4 @@ class LearnTrustAgent:
                         continue
                     self.registers[id] = (1 - self.alpha_indirect) * self.registers[id] + self.alpha_indirect * active_id_registers[id]
 
-        return [accepted, result]
+        return accepted, result

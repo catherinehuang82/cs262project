@@ -5,26 +5,34 @@ import sys
 import os
 import agent
 
+
 class Game:
     def __init__(self, num_agents=100, r_dist='uniform', num_interactions=100):
         self.run_no = 2
-        self.num_agents = num_agents # total number of agents involved in the simulation
-        self.acceptance_threshold = 0 # tau_i
+        self.num_agents = num_agents  # total number of agents involved in the simulation
+        self.acceptance_threshold = 0  # tau_i
         self.r_dist = r_dist
         self.agents = [None for i in range(num_agents)]
-        self.r_arr = [0 for i in range(num_agents)] # storage of each agent's true reliability score
+        # storage of each agent's true reliability score
+        self.r_arr = [0 for i in range(num_agents)]
         self.num_interactions = num_interactions
-        self.p_g = 2 # good encounter payoff
-        self.p_b = -2 # bad encounter payoff
-        self.alpha_direct = 0.1 # decay constant. how much a player weighs its existing opinion of another player vs information it gains from encounter with said player
-        self.alpha_indirect = 0.1 # decay constant. how much a player weighs incoming opinions from other player it had a "good" encounter with
-        self.total_payout = 0 # total payoff accumulated
-        self.encounter_history = [] # list of dictionaries, each with the following keys: ['active_id', 'passive_id', 'accepted', 'result']
-        os.makedirs(os.path.dirname(f'logs/game{self.run_no}/'), exist_ok=True) # create new directory to store logs of each run of the game
+        self.p_g = 2  # good encounter payoff
+        self.p_b = -2  # bad encounter payoff
+        self.alpha_direct = 0.1  # decay constant. how much a player weighs its existing opinion of another player vs information it gains from encounter with said player
+        # decay constant. how much a player weighs incoming opinions from other player it had a "good" encounter with
+        self.alpha_indirect = 0.1
+        self.total_payout = 0  # total payoff accumulated
+        # list of dictionaries, each with the following keys: ['active_id', 'passive_id', 'accepted', 'result']
+        self.encounter_history = []
+        # create new directory to store logs of each run of the game
+        os.makedirs(os.path.dirname(f'logs/game{self.run_no}/'), exist_ok=True)
         self.game_desc_df = pd.read_csv('logs/game_descriptions.csv')
-        self.log = open(f'logs/game{self.run_no}/game_log_{self.run_no}.txt', 'w')
-        self.df = pd.DataFrame(columns=['active_id', 'passive_id', 'active_reliability', 'passive_reliability', 'passive_opinion', 'accepted', 'result', 'total_payout'])
+        self.log = open(
+            f'logs/game{self.run_no}/game_log_{self.run_no}.txt', 'w')
+        self.df = pd.DataFrame(columns=['active_id', 'passive_id', 'active_reliability',
+                               'passive_reliability', 'passive_opinion', 'accepted', 'result', 'total_payout'])
         self.csv_path = f'logs/game{self.run_no}/game_log_{self.run_no}.csv'
+
     def initialize_agents(self):
         game_desc_df_row = {
             'run_no': self.run_no,
@@ -44,10 +52,12 @@ class Game:
             elif (self.r_dist == 'normal'):
                 r_i = np.random.normal(0, 1)
             elif (self.r_dist == 'bernoulli'):
-                r_i = np.random.randint(0,1)
-            self.agents[i] = LearnTrustAgent(i,r_i, self.alpha_direct, self.alpha_indirect)
+                r_i = np.random.randint(0, 1)
+            self.agents[i] = LearnTrustAgent(
+                i, r_i, self.alpha_direct, self.alpha_indirect)
             self.r_arr[i] = r_i
         print("agent array: ", self.agents)
+
     def run_encounter(self, i):
         '''
         initiate an encounter between two random agents, have the passive agent run the encounter,
@@ -55,7 +65,8 @@ class Game:
         args:
             i: encounter number in the whole game
         '''
-        active_id, passive_id = np.random.choice(range(100), size=2, replace=False)
+        active_id, passive_id = np.random.choice(
+            range(100), size=2, replace=False)
         active_agent = self.agents[active_id]
         passive_agent = self.agents[passive_id]
         passive_agent_opinion = passive_agent.get_registers()[active_id]
@@ -86,6 +97,7 @@ class Game:
         self.encounter_history.append(encounter_dict)
         self.df.loc[len(self.df.index)] = encounter_dict
         return encounter_print_string
+
     def run(self):
         self.initialize_agents()
         print("TEST: ", self.agents[0].get_reliability())
@@ -93,11 +105,11 @@ class Game:
             print(self.run_encounter(i))
         self.df.to_csv(self.csv_path)
         return self.encounter_history
-        
+
+
 def main():
     # TODO: maybe allow user to input different reliability distributions
     # TODO: implement the other agents: play_always, play_never, and know_reliability
-
     '''
     args = sys.argv[1:]
     if len(args) != 2:
@@ -111,10 +123,12 @@ def main():
     r_dist = 'uniform'
     num_interactions = 3000
 
-    game = Game(num_agents=num_agents, r_dist=r_dist, num_interactions=num_interactions)
+    game = Game(num_agents=num_agents, r_dist=r_dist,
+                num_interactions=num_interactions)
     encounter_history = game.run()
 
     # print(encounter_history)
+
 
 if __name__ == "__main__":
     main()
