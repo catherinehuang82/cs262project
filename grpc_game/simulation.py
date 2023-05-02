@@ -26,7 +26,7 @@ class Game:
                 r_i = np.random.normal(0, 1)
             elif (self.r_dist == 'bernoulli'):
                 r_i = np.random.randint(0,1)
-            self.agents[i] = Agent(i,r_i)
+            self.agents[i] = LearnTrustAgent(i,r_i, self.alpha_direct, self.alpha_indirect)
             self.r_arr[i] = r_i
         print("agent array: ", self.agents)
     def run_encounter(self):
@@ -37,17 +37,24 @@ class Game:
         active_id, passive_id = np.random.choice(range(100), size=2, replace=False)
         active_agent = self.agents[active_id]
         passive_agent = self.agents[passive_id]
-        accepted, result = passive_agent.handle_encounter(active_id, active_agent.get_reliability(), active_agent.get_registers(), self.p_g, self.p_b)
-        encounter_dict = {
-            'active_id': active_id,
-            'passive_id': passive_id,
-            'accepted': accepted,
-            'result': result
-        }
+        accepted, result = passive_agent.handle_encounter(
+            active_id,
+            active_agent.get_reliability(),
+            active_agent.get_registers(),
+            self.p_g,
+            self.p_b
+        )
         if accepted and result:
             self.total_payout += self.p_g
         elif accepted and not result:
             self.total_payout += self.p_b
+        encounter_dict = {
+            'active_id': active_id,
+            'passive_id': passive_id,
+            'accepted': accepted,
+            'result': result,
+            'payout': self.total_payout
+        }
         self.encounter_history.append(encounter_dict)
         return self.total_payout
     def run(self):
@@ -55,11 +62,12 @@ class Game:
         print("TEST: ", self.agents[0].get_reliability())
         for i in range(self.num_interactions):
             print(self.run_encounter())
+        return self.encounter_history
     
         
 def main():
-    # args: num agents
-    # thought: maybe allow user to input different reliability distributions
+    # TODO: maybe allow user to input different reliability distributions
+    # TODO: implement the other agents: play_always, play_never, and know_reliability
 
     '''
     args = sys.argv[1:]
@@ -72,10 +80,14 @@ def main():
 
     num_agents = 100
     r_dist = 'uniform'
-    num_interactions = 100
+    num_interactions = 1000
 
     game = Game(num_agents=num_agents, r_dist=r_dist, num_interactions=num_interactions)
-    game.run()
+    encounter_history = game.run()
+
+    print("##################################")
+
+    # print(encounter_history)
 
 if __name__ == "__main__":
     main()

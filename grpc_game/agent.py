@@ -1,14 +1,16 @@
 import numpy as np
 
-class Agent:
+class LearnTrustAgent:
     
-    def __init__(self, id, reliability):
+    def __init__(self, id, reliability, alpha_direct, alpha_indirect):
         self.id = id
         self.reliability = reliability # quantity between 0 and 1
         registers_indices = list(range(100))
         registers_indices.remove(id)
-        self.registers = dict.fromkeys(registers_indices, 0.5) # neighborhood reliability estimates. dict mapping neighbor id to reliabilty opinion
-        self.encounter_history = [] # list of dictionaries with the following keys: ['']
+        self.registers = dict.fromkeys(registers_indices, 0.5) # reliability estimates of the other agents. dict mapping neighbor id to reliabilty opinion
+        self.alpha_direct = alpha_direct
+        self.alpha_indirect = alpha_indirect
+        self.encounter_history = [] # not yet used, but could be useful
 
     def get_reliability(self):
         return self.reliability
@@ -19,6 +21,8 @@ class Agent:
     def handle_encounter(self, active_id, active_id_reliability, active_id_registers, p_g, p_b):
         '''
         handle encounter when this agent is asked to participate in an encounter as the passive agent.
+        this handling includes choosing whether to accept the encounter request, and updating opinions
+        on other agents' reliability scores based on the encounter's result.
         args:
             active_id: id of active agent "initiating" this encounter
             active_id_reliability: reliability score of active agent
@@ -32,7 +36,6 @@ class Agent:
                 game state object can log this encounter in its hitory
         '''
         opinion = self.registers[active_id]
-        # print("opinion: ", opinion)
         predicted_expected_payoff = opinion * p_g + (1 - opinion) * p_b
         accepted = predicted_expected_payoff >= 0
         if accepted:
@@ -43,7 +46,15 @@ class Agent:
             print("encounter result: ", result)
         else:
             result = 0
-        if result:
-            # TODO: implement opinion updating
-            pass
+        # have passive agent do opinion updating
+        if accepted:
+            # update opinion of active agent directly
+            self.registers[active_id] = (1 - self.alpha_direct) * self.registers[active_id] + self.alpha_direct * result
+            if result:
+                # update opinions of all other agents through active agent's opinions, since this passive agent now trusts the active agent
+                for id in active_id_registers.keys():
+                    if id == self.id:
+                        continue
+                    self.registers[id] = (1 - self.alpha_indirect) * self.registers[id] + self.alpha_indirect * active_id_registers[id]
+
         return [accepted, result]
