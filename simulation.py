@@ -32,7 +32,7 @@ class Game:
             f'logs/game{self.run_no}/game_log_{self.run_no}.txt', 'w')
         self.df = pd.DataFrame(columns=['active_id', 'passive_id', 'active_reliability',
                                'passive_reliability', 'passive_opinion', 'accepted', 'result', 'total_payout'])
-        self.df2 = pd.DataFrame(columns=['agent_id', 'reliability,' 'agent_type', 'total_payoff'])
+        self.df2 = pd.DataFrame(columns=['agent_id', 'reliability', 'total_payoff'])
         self.csv_path = f'logs/game{self.run_no}/game_log_{self.run_no}.csv'
         self.csv_path2 = f'logs2/game{self.run_no}/game_log_{self.run_no}.csv'
 
@@ -79,7 +79,7 @@ class Game:
 
         # put agent info into dataframe
         for i in range(self.num_agents):
-            self.df2.loc[len(df2.index)] = [i, self.agents[i].get_reliability(), self.agents[i].get_agent_type(), payoffs[i]]
+            self.df2.loc[len(df2.index)] = [i, self.agents[i].get_reliability(), payoffs[i]]
         self.df2.to_csv(self.csv_path2)
 
         # print game info
