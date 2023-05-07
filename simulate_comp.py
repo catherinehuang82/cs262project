@@ -9,6 +9,7 @@ import agent
 class Game:
     def __init__(self, num_agents=100, r_dist='uniform', num_interactions=100):
         self.run_no = 0
+        self.agents_per_trial = 20
         self.num_agents = num_agents  # total number of agents involved in the simulation
         self.acceptance_threshold = 0  # tau_i
         self.r_dist = r_dist
@@ -34,8 +35,10 @@ class Game:
         self.df = pd.DataFrame(columns=['active_id', 'passive_id', 'active_reliability',
                                'passive_reliability', 'passive_opinion', 'accepted', 'result', 'total_payout'])
         self.df_failures = pd.DataFrame(columns=['passive_id', 'num_attempts', 'total_penalty_payout'])
+        self.df_aggregate_failures = pd.DataFrame(columns=['mean_num_attempts'])
         self.csv_path = f'logs_failures/game{self.run_no}/game_log_{self.run_no}.csv'
         self.csv_path_failures = f'logs_failures/game{self.run_no}/game_log_failures_{self.run_no}.csv'
+        self.csv_path_aggregate_failures = f'logs_failures/game{self.run_no}/game_log_aggregate_failures_{self.run_no}.csv'
 
     def initialize_agents(self):
         game_desc_df_row = {
@@ -63,9 +66,9 @@ class Game:
                 r_i = np.random.randint(0, 1)
                 exp_r_i = 0.5
             elif (self.r_dist == 'skewed'):
-                r_i = np.random.beta(2,8)
-                exp_r_i = 0.2
-                payoff_threshold = -1.2005
+                r_i = np.random.beta(2,6)
+                exp_r_i = 0.25
+                payoff_threshold = -1.005
             self.agents[i] = LearnTrustAgent(
                 i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i, payoff_threshold)
             self.r_arr[i] = r_i
@@ -112,33 +115,41 @@ class Game:
     def run(self):
         self.initialize_agents()
         print("TEST: ", self.agents[0].get_reliability())
-        for i in range(self.num_interactions):
-            passive_id = np.random.choice(
-                range(self.num_agents), size=1, replace=False)[0]
-            df_failures_row = {
-                'passive_id': passive_id
+        for j in range(self.num_interactions):
+            attempt_counts = [0] * self.agents_per_trial
+            passive_ids = np.random.choice(range(self.num_agents), size=self.agents_per_trial, replace=False)
+            for i in range(self.agents_per_trial):
+                passive_id = passive_ids[i]
+                df_failures_row = {
+                    'passive_id': passive_id
+                }
+                active_range_pool = list(range(self.num_agents))
+                active_range_pool.remove(passive_id)
+                attempt_count = 0
+                while True:
+                    active_id = np.random.choice(active_range_pool, size=1)[0]
+                    accepted, result = (self.run_encounter(i, active_id, passive_id))[:2]
+                    if accepted and not result:
+                            attempt_count += 1
+                    if accepted and result:
+                        attempt_count += 1
+                        break
+                    if attempt_count > self.num_agents:
+                        break
+                attempt_counts[i] = attempt_count
+                df_failures_row['num_attempts'] = attempt_count
+                df_failures_row['total_penalty_payout'] = (attempt_count - 1) * self.p_b
+                log_failures_print_string = f'Run {j}: Passive agent {passive_id} took {attempt_count} attempts to get a successful encounter. Penalty this agent incurred: {(attempt_count - 1) * self.p_b}\n'
+                print(log_failures_print_string)
+                self.log_failures.write(log_failures_print_string)
+                self.df_failures.loc[len(self.df_failures.index)] = df_failures_row
+            df_agg_failures_row = {
+                'mean_num_attempts': np.mean(attempt_counts)
             }
-            active_range_pool = list(range(self.num_agents))
-            active_range_pool.remove(passive_id)
-            attempt_count = 0
-            while True:
-                active_id = np.random.choice(active_range_pool, size=1)[0]
-                accepted, result = (self.run_encounter(i, active_id, passive_id))[:2]
-                if accepted and not result:
-                     attempt_count += 1
-                if accepted and result:
-                    attempt_count += 1
-                    break
-                if attempt_count > self.num_agents:
-                    break
-            df_failures_row['num_attempts'] = attempt_count
-            df_failures_row['total_penalty_payout'] = (attempt_count - 1) * self.p_b
-            log_failures_print_string = f'Passive agent {passive_id} took {attempt_count} attempts to get a successful encounter. Penalty this agent incurred: {(attempt_count - 1) * self.p_b}\n'
-            print(log_failures_print_string)
-            self.log_failures.write(log_failures_print_string)
-            self.df_failures.loc[len(self.df_failures.index)] = df_failures_row
+            self.df_aggregate_failures.loc[len(self.df_aggregate_failures.index)] = df_agg_failures_row
         self.df.to_csv(self.csv_path)
         self.df_failures.to_csv(self.csv_path_failures)
+        self.df_aggregate_failures.to_csv(self.csv_path_aggregate_failures)
         return self.encounter_history
 
 
@@ -156,7 +167,7 @@ def main():
 
     num_agents = 100
     r_dist = 'skewed'
-    num_interactions = 200
+    num_interactions = 750
 
     game = Game(num_agents=num_agents, r_dist=r_dist,
                 num_interactions=num_interactions)
