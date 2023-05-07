@@ -17,6 +17,8 @@ class LearnTrustAgent:
         decay rate for second-hand opinion updates
     encounter_history : list
         list of encounter results
+    payoff_threshold : float
+        threshold for when this agent will accept an encounter
 
     Methods
     -------
@@ -30,7 +32,7 @@ class LearnTrustAgent:
         handle encounter when this agent is asked to participate in an encounter as the passive agent.
     '''
 
-    def __init__(self, id, reliability, alpha_direct, alpha_indirect):
+    def __init__(self, id: int, reliability: float, alpha_direct: float, alpha_indirect: float, payoff_threshold: float = 0):
         self.id = id
         self.reliability = reliability # quantity between 0 and 1
         registers_indices = list(range(100))
@@ -39,12 +41,19 @@ class LearnTrustAgent:
         self.alpha_direct = alpha_direct
         self.alpha_indirect = alpha_indirect
         self.encounter_history = [] # this attribute is not yet used, but could be useful
+        self.payoff_threshold = payoff_threshold # tau_i in the paper
 
     def get_reliability(self):
         return self.reliability
     
     def get_registers(self):
         return self.registers
+
+    def get_opinion(self, agent_id: int) -> float:
+        '''
+        returns opinion of this agent on the reliability of the agent with the given id
+        '''
+        return self.registers[agent_id]
 
     def handle_encounter(self, active_id: int, active_id_reliability: int, active_id_registers: dict, p_g: float, p_b: float) -> tuple[bool, bool]:
         '''
@@ -65,21 +74,23 @@ class LearnTrustAgent:
         '''
         opinion = self.registers[active_id]
         predicted_expected_payoff = opinion * p_g + (1 - opinion) * p_b
-        accepted = predicted_expected_payoff >= 0
+        # accept encounter if predicted expected payoff is above threshold
+        accepted = predicted_expected_payoff >= self.payoff_threshold
+        
+        success = 0
         if accepted:
             reliability_sample = np.random.random()
-            result = reliability_sample < active_id_reliability
-        else:
-            result = 0
+            success = reliability_sample < active_id_reliability # result is true (1) if encounter is successful, false (0) otherwise
+    
         # have passive agent do opinion updating
         if accepted:
             # update opinion of active agent directly
-            self.registers[active_id] = (1 - self.alpha_direct) * self.registers[active_id] + self.alpha_direct * result
-            if result:
+            self.registers[active_id] = (1 - self.alpha_direct) * self.registers[active_id] + self.alpha_direct * success
+            if success:
                 # update opinions of all other agents through active agent's opinions, since this passive agent now trusts the active agent
                 for id in active_id_registers.keys():
                     if id == self.id:
                         continue
                     self.registers[id] = (1 - self.alpha_indirect) * self.registers[id] + self.alpha_indirect * active_id_registers[id]
 
-        return accepted, result
+        return accepted, success
