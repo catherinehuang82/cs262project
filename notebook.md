@@ -82,18 +82,25 @@ Intro:
     * real-world security problems we anchor ourselves upon
         1. file uploading/downloading system
         2. collaborative computation
-    * experiment benchmarks
-        * collective agent payoff over time
-        * average number of attempts until successful encounter
     * settings
         * changing agent reliability distribution
         * changing relative magnitudes of good and bad payoffs
         * changing types of agents present and the proportion of each
+    * experiment benchmarks
+        * collective agent payoff over time
+        * average number of attempts until successful encounter
     * analysis of results
 * conclusion
 
 ## Division of Work
 Adam
 * unit tests
-* motivation on why we were about trust in distributed systems
-    * how encounters and payout connect to distributed systems
+* see parts of paper in the overleaf
+Cat
+* clean up code
+* help karly generate more plots if needed
+* game formalization
+* see parts of paper in the overleaf
+Karly
+* generate more plots
+* see parts of paper in the overleaf
