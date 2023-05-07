@@ -8,8 +8,8 @@ from config import Config
 
 
 class Game:
-    def __init__(self, num_agents=100, r_dist='uniform', num_interactions=100, p_g=2, p_b=-2, alpha_direct=0.1, alpha_indirect=0.1):
-        self.run_no = 2
+    def __init__(self, run_no=0, num_agents=100, r_dist='uniform', num_interactions=100, p_g=2, p_b=-2, alpha_direct=0.1, alpha_indirect=0.1):
+        self.run_no = run_no
         self.num_agents = num_agents  # total number of agents involved in the simulation
         self.acceptance_threshold = 0  # tau_i
         self.r_dist = r_dist
@@ -34,7 +34,7 @@ class Game:
                                'passive_reliability', 'passive_opinion', 'accepted', 'result', 'total_payout'])
         self.df2 = pd.DataFrame(columns=['agent_id', 'reliability', 'total_payoff'])
         self.csv_path = f'logs/game{self.run_no}/game_log_{self.run_no}.csv'
-        self.csv_path2 = f'logs2/game{self.run_no}/game_log_{self.run_no}.csv'
+        self.csv_path2 = f'logs2/game_log_{self.run_no}.csv'
 
     def initialize_agents(self):
         game_desc_df_row = {
@@ -59,7 +59,7 @@ class Game:
                 exp_r_i = 0
             elif (self.r_dist == 'bernoulli'):
                 exp_r_i = 0.5
-                r_i = np.random.randint(0, 1)
+                r_i = np.random.randint(0, 2)
             self.agents[i] = LearnTrustAgent(
                 i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i)
             self.r_arr[i] = r_i
@@ -158,7 +158,7 @@ def main():
     num_interactions = args[2]
     '''
 
-    game = Game(num_agents=Config.num_agents, r_dist=Config.r_dist,
+    game = Game(run_no=Config.run_no, num_agents=Config.num_agents, r_dist=Config.r_dist,
                 num_interactions=Config.num_encounters, p_g=Config.p_g, p_b=Config.p_b, 
                 alpha_direct=Config.alpha_direct, alpha_indirect=Config.alpha_indirect)
     
