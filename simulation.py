@@ -32,7 +32,9 @@ class Game:
             f'logs/game{self.run_no}/game_log_{self.run_no}.txt', 'w')
         self.df = pd.DataFrame(columns=['active_id', 'passive_id', 'active_reliability',
                                'passive_reliability', 'passive_opinion', 'accepted', 'result', 'total_payout'])
+        self.df2 = pd.DataFrame(columns=['agent_id', 'reliability,' 'agent_type', 'total_payoff'])
         self.csv_path = f'logs/game{self.run_no}/game_log_{self.run_no}.csv'
+        self.csv_path2 = f'logs2/game{self.run_no}/game_log_{self.run_no}.csv'
 
     def initialize_agents(self):
         game_desc_df_row = {
@@ -58,6 +60,27 @@ class Game:
                 i, r_i, self.alpha_direct, self.alpha_indirect)
             self.r_arr[i] = r_i
         print("agent array: ", self.agents)
+
+    def log_end_info(self, encounter_history):
+        # gather agent payoffs
+        payoffs = [0] * self.num_agents
+
+        for d in encounter_history: # d is a dict
+            if d[result] == True:
+                payoffs[d[active_agent]] += self.p_g
+                payoffs[d[passive_agent]] += self.p_g
+            else if d[result] == False:
+                payoffs[d[active_agent]] += self.p_b
+                payoffs[d[passive_agent]] += self.p_b
+
+        # put agent info into dataframe
+        for i in range(self.num_agents):
+            self.df2.loc[len(df2.index)] = [i, self.agents[i].get_reliability(), self.agents[i].get_agent_type(), payoffs[i]]
+        self.df2.to_csv(self.csv_path2)
+
+        # print game info
+        print("Agent payoffs: " + payoffs)
+        print("Total payoff:" + sum(payoffs))
 
     def run_encounter(self, i):
         '''
@@ -134,6 +157,7 @@ def main():
                 alpha_direct=Config.alpha_direct, alpha_indirect=Config.alpha_indirect)
     
     game.run()
+    game.log_end_info()
 
 
 if __name__ == "__main__":
