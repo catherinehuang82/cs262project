@@ -4,10 +4,11 @@ import pandas as pd
 import sys
 import os
 import agent
+from config import Config 
 
 
 class Game:
-    def __init__(self, num_agents=100, r_dist='uniform', num_interactions=100):
+    def __init__(self, num_agents=100, r_dist='uniform', num_interactions=100, p_g=2, p_b=-2, alpha_direct=0.1, alpha_indirect=0.1):
         self.run_no = 2
         self.num_agents = num_agents  # total number of agents involved in the simulation
         self.acceptance_threshold = 0  # tau_i
@@ -16,13 +17,13 @@ class Game:
         # storage of each agent's true reliability score
         self.r_arr = [0 for i in range(num_agents)]
         self.num_interactions = num_interactions
-        self.p_g = 2  # good encounter payoff
-        self.p_b = -2  # bad encounter payoff
-        self.alpha_direct = 0.1  # decay constant. how much a player weighs its existing opinion of another player vs information it gains from encounter with said player
+        self.p_g = p_g  # good encounter payoff
+        self.p_b = p_b  # bad encounter payoff
+        self.alpha_direct = alpha_direct  # decay constant. how much a player weighs its existing opinion of another player vs information it gains from encounter with said player
         # decay constant. how much a player weighs incoming opinions from other player it had a "good" encounter with
-        self.alpha_indirect = 0.1
+        self.alpha_indirect = alpha_indirect
         self.total_payout = 0  # total payoff accumulated
-        # list of dictionaries, each with the following keys: ['active_id', 'passive_id', 'accepted', 'result']
+        # list of encounters, encoded as dictionaries with the following keys: ['active_id', 'passive_id', 'accepted', 'result']
         self.encounter_history = []
         # create new directory to store logs of each run of the game
         os.makedirs(os.path.dirname(f'logs/game{self.run_no}/'), exist_ok=True)
@@ -66,10 +67,10 @@ class Game:
             i: encounter number in the whole game
         '''
         active_id, passive_id = np.random.choice(
-            range(100), size=2, replace=False)
+            range(self.num_agents), size=2, replace=False)
         active_agent = self.agents[active_id]
         passive_agent = self.agents[passive_id]
-        passive_agent_opinion = passive_agent.get_registers()[active_id]
+        passive_agent_opinion = passive_agent.get_opinion(active_id)
         accepted, result = passive_agent.handle_encounter(
             active_id,
             active_agent.get_reliability(),
@@ -91,7 +92,16 @@ class Game:
             'result': result,
             'total_payout': self.total_payout
         }
-        encounter_print_string = f"ENCOUNTER {i}.\nActive ID: {active_id}\nPassive ID: {passive_id}\nActive agent reliability: {active_agent.get_reliability()}\nPassive agent reliability: {passive_agent.get_reliability()}\nPassive agent's opinion of active agent: {passive_agent_opinion}\nEncounter accepted: {accepted}\nEncounter result: {result}\nTotal payout: {self.total_payout}\n"
+        encounter_print_string = f"""ENCOUNTER {i}.
+Active ID: {active_id}
+Passive ID: {passive_id}
+Active agent reliability: {active_agent.get_reliability()}
+Passive agent reliability: {passive_agent.get_reliability()}
+Passive agent's opinion of active agent: {passive_agent_opinion}
+Encounter accepted: {accepted}
+Encounter result: {result}
+Total payout: {self.total_payout}
+"""
         encounter_print_string += '\n###########################\n'
         self.log.write(encounter_print_string)
         self.encounter_history.append(encounter_dict)
@@ -119,15 +129,11 @@ def main():
     num_interactions = args[2]
     '''
 
-    num_agents = 100
-    r_dist = 'uniform'
-    num_interactions = 3000
-
-    game = Game(num_agents=num_agents, r_dist=r_dist,
-                num_interactions=num_interactions)
-    encounter_history = game.run()
-
-    # print(encounter_history)
+    game = Game(num_agents=Config.num_agents, r_dist=Config.r_dist,
+                num_interactions=Config.num_encounters, p_g=Config.p_g, p_b=Config.p_b, 
+                alpha_direct=Config.alpha_direct, alpha_indirect=Config.alpha_indirect)
+    
+    game.run()
 
 
 if __name__ == "__main__":
