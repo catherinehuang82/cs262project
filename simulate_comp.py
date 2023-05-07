@@ -4,12 +4,11 @@ import pandas as pd
 import sys
 import os
 import agent
-from config import Config 
 
 
 class Game:
-    def __init__(self, num_agents=100, r_dist='uniform', num_interactions=100, p_g=2, p_b=-2, alpha_direct=0.1, alpha_indirect=0.1):
-        self.run_no = 2
+    def __init__(self, num_agents=100, r_dist='uniform', num_interactions=100):
+        self.run_no = 0
         self.num_agents = num_agents  # total number of agents involved in the simulation
         self.acceptance_threshold = 0  # tau_i
         self.r_dist = r_dist
@@ -17,24 +16,26 @@ class Game:
         # storage of each agent's true reliability score
         self.r_arr = [0 for i in range(num_agents)]
         self.num_interactions = num_interactions
-        self.p_g = p_g  # good encounter payoff
-        self.p_b = p_b  # bad encounter payoff
-        self.alpha_direct = alpha_direct  # decay constant. how much a player weighs its existing opinion of another player vs information it gains from encounter with said player
+        self.p_g = 2  # good encounter payoff
+        self.p_b = -2  # bad encounter payoff
+        self.alpha_direct = 0.1  # decay constant. how much a player weighs its existing opinion of another player vs information it gains from encounter with said player
         # decay constant. how much a player weighs incoming opinions from other player it had a "good" encounter with
-        self.alpha_indirect = alpha_indirect
+        self.alpha_indirect = 0.1
         self.total_payout = 0  # total payoff accumulated
-        # list of encounters, encoded as dictionaries with the following keys: ['active_id', 'passive_id', 'accepted', 'result']
+        # list of dictionaries, each with the following keys: ['active_id', 'passive_id', 'accepted', 'result']
         self.encounter_history = []
         # create new directory to store logs of each run of the game
-        os.makedirs(os.path.dirname(f'logs/game{self.run_no}/'), exist_ok=True)
-        self.game_desc_df = pd.read_csv('logs/game_descriptions.csv')
+        os.makedirs(os.path.dirname(f'logs_failures/game{self.run_no}/'), exist_ok=True)
+        self.game_desc_df = pd.read_csv('logs_failures/game_descriptions.csv')
         self.log = open(
-            f'logs/game{self.run_no}/game_log_{self.run_no}.txt', 'w')
+            f'logs_failures/game{self.run_no}/game_log_{self.run_no}.txt', 'w')
+        self.log_failures = open(
+            f'logs_failures/game{self.run_no}/game_log_failures_{self.run_no}.txt', 'w')
         self.df = pd.DataFrame(columns=['active_id', 'passive_id', 'active_reliability',
                                'passive_reliability', 'passive_opinion', 'accepted', 'result', 'total_payout'])
-        self.df2 = pd.DataFrame(columns=['agent_id', 'reliability,' 'agent_type', 'total_payoff'])
-        self.csv_path = f'logs/game{self.run_no}/game_log_{self.run_no}.csv'
-        self.csv_path2 = f'logs2/game{self.run_no}/game_log_{self.run_no}.csv'
+        self.df_failures = pd.DataFrame(columns=['passive_id', 'num_attempts', 'total_penalty_payout'])
+        self.csv_path = f'logs_failures/game{self.run_no}/game_log_{self.run_no}.csv'
+        self.csv_path_failures = f'logs_failures/game{self.run_no}/game_log_failures_{self.run_no}.csv'
 
     def initialize_agents(self):
         game_desc_df_row = {
@@ -51,6 +52,7 @@ class Game:
         for i in range(self.num_agents):
             r_i = 0
             exp_r_i = 0
+            payoff_threshold = 0
             if (self.r_dist == 'uniform'):
                 r_i = np.random.uniform(0, 1)
                 exp_r_i = 0.5
@@ -58,46 +60,27 @@ class Game:
                 r_i = np.random.normal(0, 1)
                 exp_r_i = 0
             elif (self.r_dist == 'bernoulli'):
-                exp_r_i = 0.5
                 r_i = np.random.randint(0, 1)
+                exp_r_i = 0.5
+            elif (self.r_dist == 'skewed'):
+                r_i = np.random.beta(2,8)
+                exp_r_i = 0.2
+                payoff_threshold = -1.2005
             self.agents[i] = LearnTrustAgent(
-                i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i)
+                i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i, payoff_threshold)
             self.r_arr[i] = r_i
-        print("agent array: ", self.agents)
+        # print("agent array: ", self.agents)
 
-    def log_end_info(self, encounter_history):
-        # gather agent payoffs
-        payoffs = [0] * self.num_agents
-
-        for d in encounter_history: # d is a dict
-            if d[result] == True:
-                payoffs[d[active_agent]] += self.p_g
-                payoffs[d[passive_agent]] += self.p_g
-            else if d[result] == False:
-                payoffs[d[active_agent]] += self.p_b
-                payoffs[d[passive_agent]] += self.p_b
-
-        # put agent info into dataframe
-        for i in range(self.num_agents):
-            self.df2.loc[len(df2.index)] = [i, self.agents[i].get_reliability(), self.agents[i].get_agent_type(), payoffs[i]]
-        self.df2.to_csv(self.csv_path2)
-
-        # print game info
-        print("Agent payoffs: " + payoffs)
-        print("Total payoff:" + sum(payoffs))
-
-    def run_encounter(self, i):
+    def run_encounter(self, i, active_id, passive_id):
         '''
         initiate an encounter between two random agents, have the passive agent run the encounter,
         and update encounter history and total payoff according to encounter outcome
         args:
             i: encounter number in the whole game
         '''
-        active_id, passive_id = np.random.choice(
-            range(self.num_agents), size=2, replace=False)
         active_agent = self.agents[active_id]
         passive_agent = self.agents[passive_id]
-        passive_agent_opinion = passive_agent.get_opinion(active_id)
+        passive_agent_opinion = passive_agent.get_registers()[active_id]
         accepted, result = passive_agent.handle_encounter(
             active_id,
             active_agent.get_reliability(),
@@ -119,28 +102,43 @@ class Game:
             'result': result,
             'total_payout': self.total_payout
         }
-        encounter_print_string = f"""ENCOUNTER {i}.
-Active ID: {active_id}
-Passive ID: {passive_id}
-Active agent reliability: {active_agent.get_reliability()}
-Passive agent reliability: {passive_agent.get_reliability()}
-Passive agent's opinion of active agent: {passive_agent_opinion}
-Encounter accepted: {accepted}
-Encounter result: {result}
-Total payout: {self.total_payout}
-"""
+        encounter_print_string = f"ENCOUNTER {i}.\nActive ID: {active_id}\nPassive ID: {passive_id}\nActive agent reliability: {active_agent.get_reliability()}\nPassive agent reliability: {passive_agent.get_reliability()}\nPassive agent's opinion of active agent: {passive_agent_opinion}\nEncounter accepted: {accepted}\nEncounter result: {result}\nTotal payout: {self.total_payout}\n"
         encounter_print_string += '\n###########################\n'
         self.log.write(encounter_print_string)
         self.encounter_history.append(encounter_dict)
         self.df.loc[len(self.df.index)] = encounter_dict
-        return encounter_print_string
+        return [accepted, result, encounter_print_string]
 
     def run(self):
         self.initialize_agents()
         print("TEST: ", self.agents[0].get_reliability())
         for i in range(self.num_interactions):
-            print(self.run_encounter(i))
+            passive_id = np.random.choice(
+                range(self.num_agents), size=1, replace=False)[0]
+            df_failures_row = {
+                'passive_id': passive_id
+            }
+            active_range_pool = list(range(self.num_agents))
+            active_range_pool.remove(passive_id)
+            attempt_count = 0
+            while True:
+                active_id = np.random.choice(active_range_pool, size=1)[0]
+                accepted, result = (self.run_encounter(i, active_id, passive_id))[:2]
+                if accepted and not result:
+                     attempt_count += 1
+                if accepted and result:
+                    attempt_count += 1
+                    break
+                if attempt_count > self.num_agents:
+                    break
+            df_failures_row['num_attempts'] = attempt_count
+            df_failures_row['total_penalty_payout'] = (attempt_count - 1) * self.p_b
+            log_failures_print_string = f'Passive agent {passive_id} took {attempt_count} attempts to get a successful encounter. Penalty this agent incurred: {(attempt_count - 1) * self.p_b}\n'
+            print(log_failures_print_string)
+            self.log_failures.write(log_failures_print_string)
+            self.df_failures.loc[len(self.df_failures.index)] = df_failures_row
         self.df.to_csv(self.csv_path)
+        self.df_failures.to_csv(self.csv_path_failures)
         return self.encounter_history
 
 
@@ -156,12 +154,15 @@ def main():
     num_interactions = args[2]
     '''
 
-    game = Game(num_agents=Config.num_agents, r_dist=Config.r_dist,
-                num_interactions=Config.num_encounters, p_g=Config.p_g, p_b=Config.p_b, 
-                alpha_direct=Config.alpha_direct, alpha_indirect=Config.alpha_indirect)
-    
-    game.run()
-    game.log_end_info()
+    num_agents = 100
+    r_dist = 'skewed'
+    num_interactions = 200
+
+    game = Game(num_agents=num_agents, r_dist=r_dist,
+                num_interactions=num_interactions)
+    encounter_history = game.run()
+
+    # print(encounter_history)
 
 
 if __name__ == "__main__":
