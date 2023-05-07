@@ -33,5 +33,39 @@ while varying parameters like
 * Relative magnitudes of good and bad payoffs
 * The types of agents present and the proportion of each
 
+### Agent reliability distributions
+We initialize the population with a distribution of reliability scores.
+* Uniform: uniform distribution in range [0,1]
+* Normal: normal distribution with mean 1, stddev 1
+* Bernoulli: everyone has either perfect reliability (1) or none (0) w/ probability 0.5 each
+* Beta(2, 10): makes it more likely for agents to be unreliable
+
+We wanted to test results under each of these distributions.
+
+### Relative magnitudes of good and bad payoffs
+Upon a successful/unsuccessful encounter, both agents receive a good/bad payoff. 
+
+Some experiments we wanted to try:
+* Good/bad payoffs are equal (e.g. good payoff = 1, bad payoff = -1)
+* Skewed good payoff and different magnitudes (e.g. good payoff = 3, bad payoff = -1)
+* Skewed bad payoff and different magnitudes (e.g. good payoff = 1, bad payoff = -2)
+* Passive agent receives more payoffs (e.g. upon good encounter, passive/active agents receive 3/1 payoffs respectively; upon bad encounter, passive/active agents receive -1/-3 payoffs respectively)
+* Active agent receives more payoffs
+
+### Types of agents present and the proportion of each
+Agent types:
+* learn_trust: the agent initializes their opinion of each agent to the expected value (e.g. 0.5 for a uniform(0,1) distribution), then updates their opinions over time. Their likelihood of accepting an encounter from an agent is proportional to their opinion of them.
+* know_reliability: the agent has perfect information, i.e. knows every agent's true reliability.
+* always_accept: the agent accepts all interactions.
+* always_deny: the agent denies all interactions. 
+
+Some experiments we wanted to try:
+* Purely learn_trust agents
+* Purely know_reliability agents
+* A mix of all 4 types of agents of varying proportions
+
+Potential future agent types to try:
+* Agents that are more forgiving in early encounters (e.g. lower threshold to accept an interaction) and have higher standards over time. This could be reasonable because we don't want to penalize a high-reliability neighbor who happened to mess up once.
+
 ## Conclusion
 To read the final paper with more detailed descriptions of our experiments and results, please reach out to the authors at karlyhou@college.harvard.edu, catherinehuang@college.harvard.edu, and adammohamed@college.harvard.edu.
