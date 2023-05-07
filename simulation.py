@@ -59,7 +59,7 @@ class Game:
                 exp_r_i = 0.5
                 r_i = np.random.randint(0, 1)
             self.agents[i] = LearnTrustAgent(
-                i, r_i, exp_r_i, self.alpha_direct, self.alpha_indirect)
+                i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i)
             self.r_arr[i] = r_i
         print("agent array: ", self.agents)
 

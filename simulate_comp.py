@@ -52,6 +52,7 @@ class Game:
         for i in range(self.num_agents):
             r_i = 0
             exp_r_i = 0
+            payoff_threshold = 0
             if (self.r_dist == 'uniform'):
                 r_i = np.random.uniform(0, 1)
                 exp_r_i = 0.5
@@ -64,8 +65,9 @@ class Game:
             elif (self.r_dist == 'skewed'):
                 r_i = np.random.beta(2,8)
                 exp_r_i = 0.2
+                payoff_threshold = -1.2005
             self.agents[i] = LearnTrustAgent(
-                i, r_i, self.alpha_direct, self.alpha_indirect)
+                i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i, payoff_threshold)
             self.r_arr[i] = r_i
         # print("agent array: ", self.agents)
 

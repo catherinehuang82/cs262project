@@ -32,7 +32,7 @@ class LearnTrustAgent:
         handle encounter when this agent is asked to participate in an encounter as the passive agent.
     '''
 
-    def __init__(self, id: int, reliability: float, expected_r_dist: str, alpha_direct: float, alpha_indirect: float, payoff_threshold: float = 0):
+    def __init__(self, id: int, reliability: float, alpha_direct: float, alpha_indirect: float, expected_r_dist: int = 0.5, payoff_threshold: float = 0):
         self.id = id
         self.reliability = reliability # quantity between 0 and 1
         registers_indices = list(range(100))
