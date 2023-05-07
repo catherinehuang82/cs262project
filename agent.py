@@ -32,12 +32,13 @@ class LearnTrustAgent:
         handle encounter when this agent is asked to participate in an encounter as the passive agent.
     '''
 
-    def __init__(self, id: int, reliability: float, alpha_direct: float, alpha_indirect: float, payoff_threshold: float = 0):
+    def __init__(self, id: int, reliability: float, expected_r_dist: str, alpha_direct: float, alpha_indirect: float, payoff_threshold: float = 0):
         self.id = id
         self.reliability = reliability # quantity between 0 and 1
         registers_indices = list(range(100))
-        registers_indices.remove(id) 
-        self.registers = dict.fromkeys(registers_indices, 0.5) # reliability estimates of the other agents. dict mapping neighbor id to reliabilty opinion
+        registers_indices.remove(id)
+        self.expected_r_dist = expected_r_dist
+        self.registers = dict.fromkeys(registers_indices, self.expected_r_dist) # reliability estimates of the other agents. dict mapping neighbor id to reliabilty opinion
         self.alpha_direct = alpha_direct
         self.alpha_indirect = alpha_indirect
         self.encounter_history = [] # this attribute is not yet used, but could be useful
@@ -55,7 +56,7 @@ class LearnTrustAgent:
         '''
         return self.registers[agent_id]
 
-    def handle_encounter(self, active_id: int, active_id_reliability: int, active_id_registers: dict, p_g: float, p_b: float) -> tuple[bool, bool]:
+    def handle_encounter(self, active_id: int, active_id_reliability: int, active_id_registers: dict, p_g: float, p_b: float):
         '''
         handle encounter when this agent is asked to participate in an encounter as the passive agent.
         this handling includes choosing whether to accept the encounter request, and updating opinions

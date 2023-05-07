@@ -51,14 +51,19 @@ class Game:
         self.game_desc_df.to_csv('logs/game_descriptions.csv', index=False)
         for i in range(self.num_agents):
             r_i = 0
+            exp_r_i = 0
             if (self.r_dist == 'uniform'):
                 r_i = np.random.uniform(0, 1)
+                exp_r_i = 0.5
             elif (self.r_dist == 'normal'):
                 r_i = np.random.normal(0, 1)
+                exp_r_i = 0
             elif (self.r_dist == 'bernoulli'):
                 r_i = np.random.randint(0, 1)
+                exp_r_i = 0.5
             elif (self.r_dist == 'skewed'):
                 r_i = np.random.beta(2,8)
+                exp_r_i = 0.2
             self.agents[i] = LearnTrustAgent(
                 i, r_i, self.alpha_direct, self.alpha_indirect)
             self.r_arr[i] = r_i
@@ -149,7 +154,7 @@ def main():
 
     num_agents = 100
     r_dist = 'skewed'
-    num_interactions = 3000
+    num_interactions = 200
 
     game = Game(num_agents=num_agents, r_dist=r_dist,
                 num_interactions=num_interactions)
