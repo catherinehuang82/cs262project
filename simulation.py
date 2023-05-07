@@ -70,21 +70,23 @@ class Game:
         payoffs = [0] * self.num_agents
 
         for d in encounter_history: # d is a dict
-            if d[result] == True:
-                payoffs[d[active_agent]] += self.p_g
-                payoffs[d[passive_agent]] += self.p_g
-            else if d[result] == False:
-                payoffs[d[active_agent]] += self.p_b
-                payoffs[d[passive_agent]] += self.p_b
+            if d['result'] == True:
+                payoffs[d['active_id']] += self.p_g
+                payoffs[d['passive_id']] += self.p_g
+            elif d['result'] == False:
+                payoffs[d['active_id']] += self.p_b
+                payoffs[d['passive_id']] += self.p_b
 
         # put agent info into dataframe
         for i in range(self.num_agents):
-            self.df2.loc[len(df2.index)] = [i, self.agents[i].get_reliability(), payoffs[i]]
+            self.df2.loc[len(self.df2.index)] = [i, self.agents[i].get_reliability(), payoffs[i]]
         self.df2.to_csv(self.csv_path2)
 
         # print game info
-        print("Agent payoffs: " + payoffs)
-        print("Total payoff:" + sum(payoffs))
+        print("Agent payoffs: ")
+        print(payoffs)
+        print("Total payoff:")
+        print(sum(payoffs))
 
     def run_encounter(self, i):
         '''
@@ -161,7 +163,7 @@ def main():
                 alpha_direct=Config.alpha_direct, alpha_indirect=Config.alpha_indirect)
     
     game.run()
-    game.log_end_info()
+    game.log_end_info(game.encounter_history)
 
 
 if __name__ == "__main__":
