@@ -69,38 +69,3 @@ Potential future agent types to try:
 
 ## Conclusion
 To read the final paper with more detailed descriptions of our experiments and results, please reach out to the authors at karlyhou@college.harvard.edu, catherinehuang@college.harvard.edu, and adammohamed@college.harvard.edu.
-
-
-## Paper structure
-Intro:
-* why trust in distributed systems is important
-* high level game overview without notation
-    * broad connections of game setup to secure distributed systems
-    * how encounters and payout model aspects of secure distributed systems
-* formulation of game
-* experimental evaluation
-    * real-world security problems we anchor ourselves upon
-        1. file uploading/downloading system
-        2. collaborative computation
-    * settings
-        * changing agent reliability distribution
-        * changing relative magnitudes of good and bad payoffs
-        * changing types of agents present and the proportion of each
-    * experiment benchmarks
-        * collective agent payoff over time
-        * average number of attempts until successful encounter
-    * analysis of results
-* conclusion
-
-## Division of Work
-Adam
-* unit tests
-* see parts of paper in the overleaf
-Cat
-* clean up code
-* help karly generate more plots if needed
-* game formalization
-* see parts of paper in the overleaf
-Karly
-* generate more plots
-* see parts of paper in the overleaf
