@@ -1,3 +1,8 @@
+'''
+This Python library is for experimentation for benchmark 3:
+Average number of attempts until successful encounter.
+'''
+
 from agent import *
 import numpy as np
 import pandas as pd
@@ -5,10 +10,9 @@ import sys
 import os
 import agent
 
-
 class Game:
-    def __init__(self, num_agents=100, r_dist='uniform', num_interactions=100):
-        self.run_no = 0
+    def __init__(self, run_no=0, num_agents=100, r_dist='uniform', num_interactions=100, p_g=2, p_b=-2, alpha_direct=0.1, alpha_indirect=0.1):
+        self.run_no = run_no
         self.agents_per_trial = 20
         self.num_agents = num_agents  # total number of agents involved in the simulation
         self.acceptance_threshold = 0  # tau_i
@@ -17,11 +21,11 @@ class Game:
         # storage of each agent's true reliability score
         self.r_arr = [0 for i in range(num_agents)]
         self.num_interactions = num_interactions
-        self.p_g = 2  # good encounter payoff
-        self.p_b = -2  # bad encounter payoff
-        self.alpha_direct = 0.1  # decay constant. how much a player weighs its existing opinion of another player vs information it gains from encounter with said player
+        self.p_g = p_g # good encounter payoff
+        self.p_b = p_b  # bad encounter payoff
+        self.alpha_direct = alpha_direct  # decay constant. how much a player weighs its existing opinion of another player vs information it gains from encounter with said player
         # decay constant. how much a player weighs incoming opinions from other player it had a "good" encounter with
-        self.alpha_indirect = 0.1
+        self.alpha_indirect = alpha_indirect
         self.total_payout = 0  # total payoff accumulated
         # list of dictionaries, each with the following keys: ['active_id', 'passive_id', 'accepted', 'result']
         self.encounter_history = []
@@ -54,21 +58,18 @@ class Game:
         self.game_desc_df.to_csv('logs/game_descriptions.csv', index=False)
         for i in range(self.num_agents):
             r_i = 0
-            exp_r_i = 0
-            payoff_threshold = 0
+            exp_r_i = 0.5
             if (self.r_dist == 'uniform'):
                 r_i = np.random.uniform(0, 1)
-                exp_r_i = 0.5
             elif (self.r_dist == 'normal'):
-                r_i = np.random.normal(0, 1)
-                exp_r_i = 0
+                r_i = np.random.normal(0.5, 0.25)
+                r_i = np.clip(r_i, 0, 1)
             elif (self.r_dist == 'bernoulli'):
                 r_i = np.random.randint(0, 1)
-                exp_r_i = 0.5
             elif (self.r_dist == 'skewed'):
                 r_i = np.random.beta(2,6)
                 exp_r_i = 0.25
-                payoff_threshold = -1.005
+            payoff_threshold = self.p_g * exp_r_i + self.p_b * (1 - exp_r_i) - 0.0005
             self.agents[i] = LearnTrustAgent(
                 i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i, payoff_threshold)
             self.r_arr[i] = r_i

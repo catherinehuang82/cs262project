@@ -1,5 +1,6 @@
 # To-do: add comments for each
 class Config:
+  run_no = 0
   num_agents = 100
   num_encounters = 3000
   r_dist = 'uniform'

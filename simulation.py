@@ -1,3 +1,8 @@
+'''
+This Python library is for experimentation for benchmarks 1 and 2:
+Individual and collective agent payoff over time.
+'''
+
 from agent import *
 import numpy as np
 import pandas as pd
@@ -27,6 +32,7 @@ class Game:
         self.encounter_history = []
         # create new directory to store logs of each run of the game
         os.makedirs(os.path.dirname(f'logs/game{self.run_no}/'), exist_ok=True)
+        os.makedirs(os.path.dirname(f'logs2/game{self.run_no}/'), exist_ok=True)
         self.game_desc_df = pd.read_csv('logs/game_descriptions.csv')
         self.log = open(
             f'logs/game{self.run_no}/game_log_{self.run_no}.txt', 'w')
@@ -50,22 +56,21 @@ class Game:
         self.game_desc_df.to_csv('logs/game_descriptions.csv', index=False)
         for i in range(self.num_agents):
             r_i = 0
-            exp_r_i = 0
+            exp_r_i = 0.5
             if (self.r_dist == 'uniform'):
                 r_i = np.random.uniform(0, 1)
-                exp_r_i = 0.5
             elif (self.r_dist == 'normal'):
                 r_i = np.random.normal(0.5, 0.25)
-                exp_r_i = 0.5
+                r_i = np.clip(r_i, 0, 1)
             elif (self.r_dist == 'bernoulli'):
-                exp_r_i = 0.5
                 r_i = np.random.randint(0, 2)
             elif (self.r_dist == 'skewed'):
                 r_i = np.random.beta(2,6)
                 exp_r_i = 0.25
-                payoff_threshold = -1.005
+            payoff_threshold = self.p_g * exp_r_i + self.p_b * (1 - exp_r_i) - 0.0005
+            print(payoff_threshold)
             self.agents[i] = LearnTrustAgent(
-                i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i)
+                i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i, payoff_threshold)
             self.r_arr[i] = r_i
         print("agent array: ", self.agents)
 
