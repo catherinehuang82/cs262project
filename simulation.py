@@ -33,8 +33,8 @@ class Game:
         self.df = pd.DataFrame(columns=['active_id', 'passive_id', 'active_reliability',
                                'passive_reliability', 'passive_opinion', 'accepted', 'result', 'total_payout'])
         self.df2 = pd.DataFrame(columns=['agent_id', 'reliability', 'total_payoff'])
-        self.csv_path = f'logs/game{self.run_no}/game_log_{self.run_no}.csv'
-        self.csv_path2 = f'logs2/game_log_{self.run_no}.csv'
+        self.csv_path = f'logs/game{self.run_no}/game_log_{self.run_no}.csv' # analysis for payoffs over time
+        self.csv_path2 = f'karly_logs/game_log_{self.run_no}.csv' # analysis for payoffs to individual agents
 
     def initialize_agents(self):
         game_desc_df_row = {
@@ -55,11 +55,15 @@ class Game:
                 r_i = np.random.uniform(0, 1)
                 exp_r_i = 0.5
             elif (self.r_dist == 'normal'):
-                r_i = np.random.normal(0, 1)
-                exp_r_i = 0
+                r_i = np.random.normal(0.5, 0.25)
+                exp_r_i = 0.5
             elif (self.r_dist == 'bernoulli'):
                 exp_r_i = 0.5
                 r_i = np.random.randint(0, 2)
+            elif (self.r_dist == 'skewed'):
+                r_i = np.random.beta(2,6)
+                exp_r_i = 0.25
+                payoff_threshold = -1.005
             self.agents[i] = LearnTrustAgent(
                 i, r_i, self.alpha_direct, self.alpha_indirect, exp_r_i)
             self.r_arr[i] = r_i
