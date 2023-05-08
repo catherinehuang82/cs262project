@@ -6,9 +6,7 @@ Individual and collective agent payoff over time.
 from agent import *
 import numpy as np
 import pandas as pd
-import sys
 import os
-import agent
 from config import Config 
 
 
@@ -99,7 +97,7 @@ class Game:
 
     def run_encounter(self, i):
         '''
-        initiate an encounter between two random agents, have the passive agent run the encounter,
+        initiate an encounter between two random agents, have the active agent run the encounter,
         and update encounter history and total payoff according to encounter outcome
         args:
             i: encounter number in the whole game
@@ -108,26 +106,26 @@ class Game:
             range(self.num_agents), size=2, replace=False)
         active_agent = self.agents[active_id]
         passive_agent = self.agents[passive_id]
-        passive_agent_opinion = passive_agent.get_opinion(active_id)
-        accepted, result = passive_agent.handle_encounter(
-            active_id,
-            active_agent.get_reliability(),
-            active_agent.get_registers(),
+        active_agent_opinion = active_agent.get_opinion(passive_id)
+        accepted, success = active_agent.handle_encounter(
+            passive_id,
+            passive_agent.get_reliability(), # technically active agent should be blind to passive agent's true reliability, but since result of encounter is calculated in active agent function, reliability is passed
+            passive_agent.get_registers(),
             self.p_g,
             self.p_b
         )
-        if accepted and result:
+        if accepted and success:
             self.total_payout += self.p_g
-        elif accepted and not result:
+        elif accepted and not success:
             self.total_payout += self.p_b
         encounter_dict = {
             'active_id': active_id,
             'passive_id': passive_id,
             'active_reliability': active_agent.get_reliability(),
             'passive_reliability': passive_agent.get_reliability(),
-            'passive_opinion': passive_agent.get_registers()[active_id],
+            'active_opinion': active_agent_opinion,
             'accepted': accepted,
-            'result': result,
+            'result': success,
             'total_payout': self.total_payout
         }
         encounter_print_string = f"""ENCOUNTER {i}.
@@ -135,9 +133,9 @@ Active ID: {active_id}
 Passive ID: {passive_id}
 Active agent reliability: {active_agent.get_reliability()}
 Passive agent reliability: {passive_agent.get_reliability()}
-Passive agent's opinion of active agent: {passive_agent_opinion}
+Passive agent's opinion of active agent: {active_agent_opinion}
 Encounter accepted: {accepted}
-Encounter result: {result}
+Encounter result: {success}
 Total payout: {self.total_payout}
 """
         encounter_print_string += '\n###########################\n'

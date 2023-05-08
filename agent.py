@@ -1,4 +1,5 @@
 import numpy as np
+from config import Config
 
 class LearnTrustAgent:
     '''
@@ -37,7 +38,7 @@ class LearnTrustAgent:
         self.id = id
         self.reliability = reliability # quantity between 0 and 1
         # self.agent_type = agent_type
-        registers_indices = list(range(100))
+        registers_indices = list(range(Config.num_agents))
         registers_indices.remove(id)
         self.expected_r_dist = expected_r_dist
         self.registers = dict.fromkeys(registers_indices, self.expected_r_dist) # reliability estimates of the other agents. dict mapping neighbor id to reliabilty opinion
@@ -48,9 +49,6 @@ class LearnTrustAgent:
 
     def get_reliability(self):
         return self.reliability
-
-    # def get_agent_type(self):
-    #     return self.agent_type
     
     def get_registers(self):
         return self.registers
@@ -61,24 +59,24 @@ class LearnTrustAgent:
         '''
         return self.registers[agent_id]
 
-    def handle_encounter(self, active_id: int, active_id_reliability: int, active_id_registers: dict, p_g: float, p_b: float):
+    def handle_encounter(self, passive_id: int, passive_id_reliability: int, passive_id_registers: dict, p_g: float, p_b: float):
         '''
-        handle encounter when this agent is asked to participate in an encounter as the passive agent.
+        handle encounter when this agent is asked to participate in an encounter as the active agent.
         this handling includes choosing whether to accept the encounter request, and updating opinions
         on other agents' reliability scores based on the encounter's result.
         args:
-            active_id: id of active agent "initiating" this encounter
-            active_id_reliability: reliability score of active agent
-            active_id_registers: registers (opinions) of active agent
+            passive_id: id of passive agent "initiating" this encounter
+            passive_id_reliability: reliability score of passive agent
+            passive_id_registers: registers (opinions) of passive agent
             p_g: payout if encounter if good
             p_b: payout if encounter is bad
         returns:
             accepted: boolean for whether or not this agent accepted the encounter
-            result: boolean for whether or not this encounter was good
+            success: boolean for whether or not this encounter was good
                 these two quantities are returned so that the
-                game state object can log this encounter in its hitory
+                game state object can log this encounter in its history
         '''
-        opinion = self.registers[active_id]
+        opinion = self.get_opinion(passive_id)
         predicted_expected_payoff = opinion * p_g + (1 - opinion) * p_b
         # accept encounter if predicted expected payoff is above threshold
         accepted = predicted_expected_payoff >= self.payoff_threshold
@@ -86,17 +84,17 @@ class LearnTrustAgent:
         success = 0
         if accepted:
             reliability_sample = np.random.random()
-            success = reliability_sample < active_id_reliability # result is true (1) if encounter is successful, false (0) otherwise
+            success = reliability_sample < passive_id_reliability # result is true (1) if encounter is successful, false (0) otherwise
     
-        # have passive agent do opinion updating
+        # have active agent do opinion updating
         if accepted:
-            # update opinion of active agent directly
-            self.registers[active_id] = (1 - self.alpha_direct) * self.registers[active_id] + self.alpha_direct * success
+            # update opinion of passive agent directly
+            self.registers[passive_id] = (1 - self.alpha_direct) * self.registers[passive_id] + self.alpha_direct * success
             if success:
-                # update opinions of all other agents through active agent's opinions, since this passive agent now trusts the active agent
-                for id in active_id_registers.keys():
+                # update opinions of all other agents through passive agent's opinions, since this active agent now trusts the passive agent
+                for id in passive_id_registers.keys():
                     if id == self.id:
                         continue
-                    self.registers[id] = (1 - self.alpha_indirect) * self.registers[id] + self.alpha_indirect * active_id_registers[id]
+                    self.registers[id] = (1 - self.alpha_indirect) * self.registers[id] + self.alpha_indirect * passive_id_registers[id]
 
         return accepted, success
