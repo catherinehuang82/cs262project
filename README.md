@@ -18,4 +18,4 @@ We implement the Diamadi et al. paper and extend it to specific experimental set
 * How this game-based study of trust can broadly help us design more accurate and efficient secure distributed systems in the real world.
 
 ## Full Project Writeup
-Available upon request.
+To read the final paper with more detailed descriptions of our experiments and results, please reach out to the authors at karlyhou@college.harvard.edu, catherinehuang@college.harvard.edu, and adammohamed@college.harvard.edu.
