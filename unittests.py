@@ -71,12 +71,14 @@ class TestAgentClass(unittest.TestCase):
                 Config.p_g,
                 Config.p_b
             )
+            
+            print(f'Encounter {i}: {active_id} -> {passive_id} | Accepted: {accepted} | Success: {success}')
 
             # Test the accepted and success data types
             self.assertTrue(accepted in [True, False])
             self.assertTrue(success in [True, False])
             
-            # accepted should be True if the active agent's opinion of the passive agent is greater than predicted expected payoff
+            # accepted should be True if the predicted expected payoff of the passive agent is >= active agents payoff threshold
             opinion = active_agent.get_opinion(passive_id)
             predicted_expected_payoff = opinion * Config.p_g + (1 - opinion) * Config.p_b
             self.assertEqual(accepted, predicted_expected_payoff >= active_agent.payoff_threshold)
